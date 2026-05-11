@@ -34,8 +34,8 @@ async function getValidToken() {
 async function loginHGI() {
   try {
     const apiUrl = process.env.HGI_API_URL;
-    const usuario = '98711025';
-    const password = 'C9871';
+    const usuario = 'CGOMEZ';
+    const password = 'MILO1122';
 
     if (!apiUrl || !usuario || !password) {
       throw new Error('Faltan credenciales del HGI en variables de entorno');
