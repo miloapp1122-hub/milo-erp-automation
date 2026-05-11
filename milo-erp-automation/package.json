@@ -1,0 +1,29 @@
+{
+  "name": "milo-erp-automation",
+  "version": "1.0.0",
+  "description": "Automatización de ERP HGI en Netlify para Milo",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'Build script - deploy to Netlify'",
+    "start": "netlify dev",
+    "test": "jest",
+    "lint": "eslint functions/**/*.js"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.11",
+    "googleapis": "^118.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "eslint": "^8.0.0"
+  },
+  "keywords": [
+    "netlify",
+    "serverless",
+    "hgi",
+    "erp",
+    "automation"
+  ],
+  "author": "Tu Nombre",
+  "license": "MIT"
+}

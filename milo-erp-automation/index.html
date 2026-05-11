@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<meta name="theme-color" content="#0F6E56"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<title>Milo · Antioqueña de Lubricantes - ERP Automation</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #f5f5f5;
+    color: #333;
+  }
+  
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  header {
+    background: linear-gradient(135deg, #0F6E56 0%, #0a4a3a 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  
+  header h1 {
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+  
+  .status {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+  }
+  
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+  }
+  
+  .status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #4CAF50;
+    animation: pulse 2s infinite;
+  }
+  
+  .status-dot.error { 
+    background: #f44336;
+    animation: none;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+  
+  .card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-left: 4px solid #0F6E56;
+  }
+  
+  .card h3 {
+    color: #0F6E56;
+    margin-bottom: 15px;
+    font-size: 16px;
+  }
+  
+  .card-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .card-number {
+    font-size: 36px;
+    font-weight: bold;
+    color: #0F6E56;
+  }
+  
+  .card-icon {
+    font-size: 48px;
+    opacity: 0.2;
+  }
+  
+  .loading {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background: #0F6E56;
+    border-radius: 50%;
+    animation: loading 1.4s infinite;
+    margin-right: 5px;
+  }
+  
+  @keyframes loading {
+    0%, 80%, 100% { opacity: 0.2; }
+    40% { opacity: 1; }
+  }
+  
+  .table-container {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    overflow-x: auto;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  
+  thead {
+    background: #f5f5f5;
+    border-bottom: 2px solid #0F6E56;
+  }
+  
+  th {
+    padding: 12px;
+    text-align: left;
+    color: #0F6E56;
+    font-weight: 600;
+  }
+  
+  td {
+    padding: 12px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  tbody tr:hover {
+    background: #f9f9f9;
+  }
+  
+  .error-message {
+    background: #ffebee;
+    color: #c62828;
+    padding: 12px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    border-left: 4px solid #c62828;
+  }
+  
+  .success-message {
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: 12px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    border-left: 4px solid #2e7d32;
+  }
+  
+  .btn-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  
+  button {
+    background: #0F6E56;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s;
+  }
+  
+  button:hover {
+    background: #0a4a3a;
+  }
+  
+  button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+  
+  .last-sync {
+    font-size: 12px;
+    color: #666;
+    margin-top: 10px;
+  }
+  
+  @media (max-width: 768px) {
+    header h1 {
+      font-size: 20px;
+    }
+    
+    .grid {
+      grid-template-columns: 1fr;
+    }
+    
+    table {
+      font-size: 12px;
+    }
+    
+    th, td {
+      padding: 8px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>🎯 Milo - Sistema ERP Automatizado</h1>
+    <p>Integración en tiempo real con HGI</p>
+    <div class="status">
+      <div class="status-item">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text">Conectando...</span>
+      </div>
+      <div class="status-item">
+        <span id="last-update">Última sincronización: nunca</span>
+      </div>
+    </div>
+  </header>
+
+  <div id="error-container"></div>
+
+  <div class="btn-group">
+    <button onclick="cargarTodosLosDatos()">🔄 Cargar todos los datos</button>
+    <button onclick="cargarEmpleados()">👥 Empleados</button>
+    <button onclick="cargarVendedores()">💼 Vendedores</button>
+    <button onclick="cargarProductos()">📦 Productos</button>
+    <button onclick="cargarPedidos()">🛒 Pedidos</button>
+    <button onclick="cargarClientes()">👤 Clientes</button>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>👥 Empleados</h3>
+      <div class="card-content">
+        <div class="card-number" id="count-empleados"><span class="loading"></span></div>
+        <div class="card-icon">👥</div>
+      </div>
+      <div class="last-sync" id="sync-empleados"></div>
+    </div>
+
+    <div class="card">
+      <h3>💼 Vendedores</h3>
+      <div class="card-content">
+        <div class="card-number" id="count-vendedores"><span class="loading"></span></div>
+        <div class="card-icon">💼</div>
+      </div>
+      <div class="last-sync" id="sync-vendedores"></div>
+    </div>
+
+    <div class="card">
+      <h3>📦 Productos</h3>
+      <div class="card-content">
+        <div class="card-number" id="count-productos"><span class="loading"></span></div>
+        <div class="card-icon">📦</div>
+      </div>
+      <div class="last-sync" id="sync-productos"></div>
+    </div>
+
+    <div class="card">
+      <h3>🛒 Pedidos</h3>
+      <div class="card-content">
+        <div class="card-number" id="count-pedidos"><span class="loading"></span></div>
+        <div class="card-icon">🛒</div>
+      </div>
+      <div class="last-sync" id="sync-pedidos"></div>
+    </div>
+
+    <div class="card">
+      <h3>💳 Cartera</h3>
+      <div class="card-content">
+        <div class="card-number" id="count-cartera"><span class="loading"></span></div>
+        <div class="card-icon">💳</div>
+      </div>
+      <div class="last-sync" id="sync-cartera"></div>
+    </div>
+
+    <div class="card">
+      <h3>📝 Crear Pedido</h3>
+      <div class="card-content">
+        <div style="color: #0F6E56; font-size: 14px; text-align: center; width: 100%;">
+          <button onclick="abrirFormularioPedido()" style="width: 100%;">Crear Nuevo Pedido</button>
+        </div>
+      </div>
+    </div>
+
+  <div id="tables-container"></div>
+</div>
+
+<script>
+// URLs de las APIs (ajusta según tu dominio)
+const API_BASE = '/.netlify/functions';
+
+// Objeto para almacenar datos
+const datos = {
+  empleados: [],
+  vendedores: [],
+  productos: [],
+  pedidos: [],
+  clientes: []
+};
+
+// Actualizar estado de conexión
+function actualizarEstado(conectado) {
+  const dot = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  
+  if (conectado) {
+    dot.classList.remove('error');
+    text.textContent = '✅ Conectado';
+  } else {
+    dot.classList.add('error');
+    text.textContent = '❌ Error de conexión';
+  }
+}
+
+// Mostrar errores
+function mostrarError(mensaje) {
+  const container = document.getElementById('error-container');
+  container.innerHTML = `<div class="error-message">${mensaje}</div>`;
+  setTimeout(() => { container.innerHTML = ''; }, 5000);
+}
+
+// Mostrar éxito
+function mostrarExito(mensaje) {
+  const container = document.getElementById('error-container');
+  container.innerHTML = `<div class="success-message">${mensaje}</div>`;
+  setTimeout(() => { container.innerHTML = ''; }, 3000);
+}
+
+// Cargar empleados
+async function cargarEmpleados() {
+  try {
+    document.getElementById('count-empleados').innerHTML = '<span class="loading"></span>';
+    const response = await fetch(`${API_BASE}/get-empleados?codigo=*&sucursal=*&centro_costo=*&incluir_foto=false&solo_activos=*`);
+    const result = await response.json();
+    
+    if (result.success) {
+      datos.empleados = result.data;
+      document.getElementById('count-empleados').textContent = result.count;
+      document.getElementById('sync-empleados').textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
+      mostrarExito(`✅ ${result.count} empleados cargados`);
+      mostrarTabla('empleados', result.data, ['id', 'nombre', 'wa']);
+      actualizarEstado(true);
+    } else {
+      throw new Error(result.error);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    mostrarError(`❌ Error al cargar empleados: ${error.message}`);
+    actualizarEstado(false);
+  }
+}
+
+// Cargar vendedores
+async function cargarVendedores() {
+  try {
+    document.getElementById('count-vendedores').innerHTML = '<span class="loading"></span>';
+    const response = await fetch(`${API_BASE}/get-vendedores?codigo_vendedor=*`);
+    const result = await response.json();
+    
+    if (result.success) {
+      datos.vendedores = result.data;
+      document.getElementById('count-vendedores').textContent = result.count;
+      document.getElementById('sync-vendedores').textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
+      mostrarExito(`✅ ${result.count} vendedores cargados`);
+      mostrarTabla('vendedores', result.data, ['Codigo', 'Nombre', 'Telefono']);
+      actualizarEstado(true);
+    } else {
+      throw new Error(result.error);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    mostrarError(`❌ Error al cargar vendedores: ${error.message}`);
+    actualizarEstado(false);
+  }
+}
+
+// Cargar productos
+async function cargarProductos() {
+  try {
+    document.getElementById('count-productos').innerHTML = '<span class="loading"></span>';
+    const response = await fetch(`${API_BASE}/get-productos?codigo_producto=0&movil=1&ecommerce=1&estado=1&kardex=1&incluir_foto=false`);
+    const result = await response.json();
+    
+    if (result.success) {
+      datos.productos = result.data;
+      document.getElementById('count-productos').textContent = result.count;
+      document.getElementById('sync-productos').textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
+      mostrarExito(`✅ ${result.count} productos cargados`);
+      mostrarTabla('productos', result.data.slice(0, 100), ['Codigo', 'Descripcion', 'Precio1', 'Vigente']);
+      actualizarEstado(true);
+    } else {
+      throw new Error(result.error);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    mostrarError(`❌ Error al cargar productos: ${error.message}`);
+    actualizarEstado(false);
+  }
+}
+
+// Cargar pedidos
+async function cargarPedidos() {
+  try {
+    document.getElementById('count-pedidos').innerHTML = '<span class="loading"></span>';
+    const hoy = new Date().toISOString().split('T')[0];
+    const response = await fetch(`${API_BASE}/get-pedidos?tercero=*&fecha_inicial=${hoy}&fecha_final=${hoy}`);
+    const result = await response.json();
+    
+    if (result.success) {
+      datos.pedidos = result.data;
+      document.getElementById('count-pedidos').textContent = result.count;
+      document.getElementById('sync-pedidos').textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
+      mostrarExito(`✅ ${result.count} pedidos cargados`);
+      mostrarTabla('pedidos', result.data, ['Numero', 'Fecha', 'Tercero', 'Total']);
+      actualizarEstado(true);
+    } else {
+      throw new Error(result.error);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    mostrarError(`❌ Error al cargar pedidos: ${error.message}`);
+    actualizarEstado(false);
+  }
+}
+
+// Cargar cartera
+async function cargarCartera() {
+  try {
+    document.getElementById('count-cartera').innerHTML = '<span class="loading"></span>';
+    const hoy = new Date();
+    const anyo = hoy.getFullYear();
+    const periodo = String(hoy.getMonth() + 1).padStart(2, '0');
+    
+    const response = await fetch(`${API_BASE}/get-cartera?anyo=${anyo}&periodo=${periodo}&codigo_tercero=*&codigo_vendedor=*`);
+    const result = await response.json();
+    
+    if (result.success) {
+      datos.cartera = result.data;
+      document.getElementById('count-cartera').textContent = result.count;
+      document.getElementById('sync-cartera').textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
+      mostrarExito(`✅ ${result.count} registros de cartera cargados`);
+      mostrarTabla('cartera', result.data.slice(0, 100), ['Tercero', 'Saldo', 'Vencido', 'Fecha']);
+      actualizarEstado(true);
+    } else {
+      throw new Error(result.error);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    mostrarError(`❌ Error al cargar cartera: ${error.message}`);
+    actualizarEstado(false);
+  }
+}
+
+// Obtener ubicación GPS
+function obtenerGPS() {
+  return new Promise((resolve, reject) => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          resolve({
+            latitud: position.coords.latitude,
+            longitud: position.coords.longitude,
+            precisión: position.coords.accuracy
+          });
+        },
+        error => {
+          console.warn('GPS no disponible:', error);
+          resolve(null);
+        }
+      );
+    } else {
+      resolve(null);
+    }
+  });
+}
+
+// Abrir formulario para crear pedido
+async function abrirFormularioPedido() {
+  // Obtener GPS automáticamente
+  const gps = await obtenerGPS();
+  
+  const html = `
+    <div style="padding: 20px; background: white; border-radius: 10px; max-height: 80vh; overflow-y: auto;">
+      <h2>📝 Crear Nuevo Pedido</h2>
+      
+      <div style="margin-top: 20px;">
+        <label>Cliente:</label>
+        <select id="cliente-select" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+          <option value="">-- Seleccionar Cliente --</option>
+          ${datos.clientes.map(c => `<option value="${c.NumeroIdentificacion || c.codigo}">${c.Nombre || c.nombre}</option>`).join('')}
+        </select>
+      </div>
+
+      <div style="margin-top: 10px;">
+        <label>Vendedor:</label>
+        <select id="vendedor-select" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+          <option value="">-- Seleccionar Vendedor --</option>
+          ${datos.vendedores.map(v => `<option value="${v.Codigo || v.codigo}">${v.Nombre || v.nombre}</option>`).join('')}
+        </select>
+      </div>
+
+      <div style="margin-top: 10px;">
+        <label>Producto:</label>
+        <select id="producto-select" onchange="cargarEquivalentes()" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+          <option value="">-- Seleccionar Producto --</option>
+          ${datos.productos.map(p => `<option value="${p.Codigo || p.codigo}">${p.Descripcion || p.descripcion}</option>`).join('')}
+        </select>
+      </div>
+
+      <div style="margin-top: 10px;" id="equivalentes-container" style="display: none;">
+        <label>📦 Equivalentes Disponibles:</label>
+        <select id="equivalentes-select" onchange="seleccionarEquivalente()" style="width: 100%; padding: 8px; margin-bottom: 10px; background: #fff3cd; border: 2px solid #ffc107;">
+          <option value="">-- Seleccionar Equivalente --</option>
+        </select>
+        <small style="color: #ff6b6b;">💡 Los datos del equivalente se cargarán automáticamente</small>
+      </div>
+
+      <div style="margin-top: 10px;">
+        <label>Cantidad:</label>
+        <input type="number" id="cantidad-input" min="1" value="1" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+      </div>
+
+      <div style="margin-top: 10px;">
+        <label>Lista de Precio (1-8):</label>
+        <select id="lista-precio-select" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+          <option value="1">Precio 1</option>
+          <option value="2">Precio 2</option>
+          <option value="3">Precio 3</option>
+          <option value="4">Precio 4</option>
+          <option value="5">Precio 5</option>
+          <option value="6">Precio 6</option>
+          <option value="7">Precio 7</option>
+          <option value="8">Precio 8</option>
+          <option value="manual">Precio Manual</option>
+        </select>
+      </div>
+
+      <div style="margin-top: 10px;" id="precio-manual-div" style="display: none;">
+        <label>Precio Manual:</label>
+        <input type="number" id="precio-manual-input" min="0" value="0" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+      </div>
+
+      <div style="margin-top: 10px; background: #e8f5e9; padding: 10px; border-radius: 5px;">
+        ${gps ? `📍 GPS: ${gps.latitud.toFixed(4)}, ${gps.longitud.toFixed(4)} (${gps.precisión.toFixed(0)}m)` : '❌ GPS no disponible'}
+      </div>
+
+      <div id="datos-producto" style="margin-top: 15px; background: #f5f5f5; padding: 10px; border-radius: 5px; display: none;">
+        <strong>Información del Producto:</strong>
+        <p id="info-producto-texto" style="margin: 5px 0; font-size: 12px;"></p>
+      </div>
+
+      <div style="margin-top: 20px; display: flex; gap: 10px;">
+        <button onclick="enviarPedido()" style="flex: 1; background: #0F6E56; color: white; padding: 10px; border-radius: 5px; border: none; cursor: pointer;">✅ Crear Pedido</button>
+        <button onclick="cerrarModal()" style="flex: 1; background: #ccc; color: #333; padding: 10px; border-radius: 5px; border: none; cursor: pointer;">❌ Cancelar</button>
+      </div>
+    </div>
+  `;
+
+  // Crear modal
+  const modal = document.createElement('div');
+  modal.id = 'modal-pedido';
+  modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;';
+  modal.innerHTML = html;
+  
+  document.body.appendChild(modal);
+
+  // Mostrar/ocultar precio manual
+  document.getElementById('lista-precio-select').addEventListener('change', (e) => {
+    document.getElementById('precio-manual-div').style.display = e.target.value === 'manual' ? 'block' : 'none';
+  });
+}
+
+// Variable global para guardar producto seleccionado
+let productoSeleccionado = null;
+let equivalentesActuales = [];
+
+// Cargar equivalentes del producto
+async function cargarEquivalentes() {
+  const codigoProducto = document.getElementById('producto-select').value;
+  
+  if (!codigoProducto) {
+    document.getElementById('equivalentes-container').style.display = 'none';
+    return;
+  }
+
+  try {
+    // Obtener producto con equivalentes
+    const response = await fetch(`${API_BASE}/get-productos?codigo_producto=${codigoProducto}`);
+    const result = await response.json();
+    
+    if (result.success && result.data && result.data.length > 0) {
+      productoSeleccionado = result.data[0];
+      
+      // Obtener equivalentes reales (esto requiere llamar a create-pedido internamente)
+      // Por ahora, mostrar los códigos de equivalentes
+      const codigosEq = [
+        ...(productoSeleccionado.ProductosRelacionados || []),
+        ...(productoSeleccionado.ProductosRentables || []),
+        ...(productoSeleccionado.ProductosCruzados || []),
+      ].filter(c => c && c !== '0');
+
+      if (codigosEq.length > 0) {
+        // Cargar datos reales de cada equivalente
+        equivalentesActuales = [];
+        
+        for (const codEq of codigosEq) {
+          try {
+            const respEq = await fetch(`${API_BASE}/get-productos?codigo_producto=${codEq}`);
+            const resultEq = await respEq.json();
+            if (resultEq.success && resultEq.data && resultEq.data.length > 0) {
+              equivalentesActuales.push(resultEq.data[0]);
+            }
+          } catch (e) {
+            console.warn('Error cargando equivalente:', e);
+          }
+        }
+
+        // Mostrar equivalentes
+        if (equivalentesActuales.length > 0) {
+          const selectEq = document.getElementById('equivalentes-select');
+          selectEq.innerHTML = '<option value="">-- Seleccionar Equivalente --</option>';
+          
+          equivalentesActuales.forEach(eq => {
+            const option = document.createElement('option');
+            option.value = eq.Codigo;
+            option.textContent = `${eq.Descripcion} (Precio1: $${eq.Precio1})`;
+            selectEq.appendChild(option);
+          });
+
+          document.getElementById('equivalentes-container').style.display = 'block';
+          mostrarInfoProducto(productoSeleccionado);
+        } else {
+          document.getElementById('equivalentes-container').style.display = 'none';
+          mostrarInfoProducto(productoSeleccionado);
+        }
+      } else {
+        document.getElementById('equivalentes-container').style.display = 'none';
+        mostrarInfoProducto(productoSeleccionado);
+      }
+    }
+  } catch (error) {
+    console.error('Error cargando equivalentes:', error);
+    mostrarError('❌ Error cargando equivalentes');
+  }
+}
+
+// Seleccionar equivalente y cargar sus datos REALES
+function seleccionarEquivalente() {
+  const codigoEq = document.getElementById('equivalentes-select').value;
+  
+  if (!codigoEq) return;
+
+  const equivalente = equivalentesActuales.find(eq => eq.Codigo === codigoEq);
+  if (equivalente) {
+    // IMPORTANTE: Usar datos del equivalente, NO del producto principal
+    productoSeleccionado = equivalente;
+    mostrarInfoProducto(equivalente);
+  }
+}
+
+// Mostrar información del producto/equivalente seleccionado
+function mostrarInfoProducto(producto) {
+  const container = document.getElementById('datos-producto');
+  const info = document.getElementById('info-producto-texto');
+  
+  if (producto) {
+    container.style.display = 'block';
+    info.innerHTML = `
+      <strong>${producto.Descripcion}</strong><br>
+      Código: ${producto.Codigo}<br>
+      Precios: $${producto.Precio1} | $${producto.Precio2} | $${producto.Precio3} | ... | $${producto.Precio8}<br>
+      Estado: ${producto.Vigente === 1 ? '✅ Vigente' : '❌ Inactivo'}<br>
+      Móvil: ${producto.Movil === 1 ? '✅' : '❌'} | Ecommerce: ${producto.Ecommerce === 1 ? '✅' : '❌'}
+    `;
+  }
+}
+
+function cerrarModal() {
+  const modal = document.getElementById('modal-pedido');
+  if (modal) modal.remove();
+}
+
+async function enviarPedido() {
+  try {
+    const cliente = document.getElementById('cliente-select').value;
+    const vendedor = document.getElementById('vendedor-select').value;
+    const codigoProducto = document.getElementById('producto-select').value;
+    const cantidad = parseInt(document.getElementById('cantidad-input').value) || 1;
+    const listaPrecio = document.getElementById('lista-precio-select').value;
+    const precioManual = parseFloat(document.getElementById('precio-manual-input').value) || 0;
+
+    if (!cliente || !codigoProducto) {
+      mostrarError('❌ Selecciona cliente y producto');
+      return;
+    }
+
+    // IMPORTANTE: Usar el productoSeleccionado que puede ser el equivalente
+    if (!productoSeleccionado) {
+      mostrarError('❌ Error: carga los datos del producto primero');
+      return;
+    }
+
+    const gps = await obtenerGPS();
+
+    // Usar datos REALES del producto/equivalente seleccionado
+    const precioFinal = listaPrecio === 'manual' 
+      ? precioManual 
+      : productoSeleccionado[`Precio${listaPrecio}`] || 0;
+
+    const pedido = {
+      tercero: cliente,
+      vendedor: vendedor,
+      documentoDetalle: [{
+        codigo: productoSeleccionado.Codigo, // Usar código del equivalente si se seleccionó uno
+        cantidad: cantidad,
+        lista_precio: listaPrecio === 'manual' ? null : parseInt(listaPrecio),
+        precioManual: listaPrecio === 'manual' ? precioManual : null,
+        precio: precioFinal,
+      }],
+      gps: gps,
+      transaccion: '09', // VALE DEL ABURRA
+    };
+
+    const response = await fetch(`${API_BASE}/create-pedido`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(pedido),
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      mostrarExito('✅ Pedido creado correctamente');
+      cerrarModal();
+      cargarTodosLosDatos();
+    } else {
+      mostrarError(`❌ Error: ${result.error}`);
+    }
+  } catch (error) {
+    mostrarError(`❌ Error: ${error.message}`);
+  }
+}
+
+// Cargar todos los datos
+async function cargarTodosLosDatos() {
+  document.getElementById('status-text').textContent = '🔄 Sincronizando...';
+  await Promise.all([
+    cargarEmpleados(),
+    cargarVendedores(),
+    cargarProductos(),
+    cargarPedidos(),
+    cargarClientes(),
+    cargarCartera()
+  ]);
+  document.getElementById('last-update').textContent = `Última sincronización: ${new Date().toLocaleTimeString()}`;
+}
+
+// Mostrar tabla de datos
+function mostrarTabla(nombre, datos, columnas) {
+  const container = document.getElementById('tables-container');
+  
+  if (!Array.isArray(datos) || datos.length === 0) {
+    container.innerHTML += `<p>No hay datos para mostrar</p>`;
+    return;
+  }
+  
+  let html = `<div class="table-container"><h3>${nombre.toUpperCase()}</h3><table><thead><tr>`;
+  
+  columnas.forEach(col => {
+    html += `<th>${col}</th>`;
+  });
+  
+  html += `</tr></thead><tbody>`;
+  
+  datos.forEach(fila => {
+    html += `<tr>`;
+    columnas.forEach(col => {
+      const valor = fila[col] || '';
+      html += `<td>${valor}</td>`;
+    });
+    html += `</tr>`;
+  });
+  
+  html += `</tbody></table></div>`;
+  container.innerHTML = html;
+}
+
+// Cargar datos al iniciar
+window.addEventListener('load', () => {
+  cargarTodosLosDatos();
+  
+  // Recargar cada 5 minutos
+  setInterval(cargarTodosLosDatos, 5 * 60 * 1000);
+});
+</script>
+
+</body>
+</html>
